@@ -13,7 +13,7 @@ import { parseFilterParams } from '../utils/parseFilterParams.js';
 export const getContactsController = async (req, res) => {
   const { page, perPage } = parsePaginationParams(req.query);
   const { sortBy, sortOrder } = parseSortParams(req.query);
-  const filter = parseFilterParams(req.query);
+  const filter = { ...parseFilterParams(req.query), userId: req.user._id };
 
   const {
     data: contacts,
@@ -44,7 +44,7 @@ export const getContactsController = async (req, res) => {
 
 export const getContactByIdController = async (req, res) => {
   const { contactId } = req.params;
-  const contact = await getContactById(contactId);
+  const contact = await getContactById(contactId, req.user._id);
   if (!contact) {
     throw createHttpError(404, 'Contact not found');
   }
@@ -63,6 +63,7 @@ export const createContactController = async (req, res) => {
     isFavourite = false,
     contactType,
   } = req.body;
+  const userId = req.user.id;
 
   const newContact = await createContact({
     name,
@@ -70,6 +71,7 @@ export const createContactController = async (req, res) => {
     email,
     isFavourite,
     contactType,
+    userId,
   });
   res.status(201).json({
     status: 201,
@@ -80,8 +82,9 @@ export const createContactController = async (req, res) => {
 
 export const patchContactController = async (req, res, next) => {
   const { contactId } = req.params;
+  const userId = req.user._id;
 
-  const result = await updateContact(contactId, req.body);
+  const result = await updateContact(contactId, req.body, userId);
   if (!result) {
     next(createHttpError(404, 'Contact not found'));
     return;
@@ -96,7 +99,9 @@ export const patchContactController = async (req, res, next) => {
 
 export const deleteContactController = async (req, res, next) => {
   const { contactId } = req.params;
-  const contact = await deleteContact(contactId);
+  const userId = rreq.user._id;
+
+  const contact = await deleteContact(contactId, userId);
 
   if (!contact) {
     return next(createHttpError(404, 'Contact not found'));
