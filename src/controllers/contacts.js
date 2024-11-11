@@ -32,13 +32,15 @@ export const getContactsController = async (req, res) => {
   res.status(200).json({
     status: 200,
     message: 'Successfully found contacts!',
-    data: contacts,
-    page,
-    perPage,
-    totalItems,
-    totalPages,
-    hasPreviousPage,
-    hasNextPage,
+    data: {
+      data: contacts,
+      page,
+      perPage,
+      totalItems,
+      totalPages,
+      hasPreviousPage,
+      hasNextPage,
+    },
   });
 };
 
@@ -99,7 +101,7 @@ export const patchContactController = async (req, res, next) => {
 
 export const deleteContactController = async (req, res, next) => {
   const { contactId } = req.params;
-  const userId = rreq.user._id;
+  const userId = req.user._id;
 
   const contact = await deleteContact(contactId, userId);
 
