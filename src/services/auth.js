@@ -140,10 +140,16 @@ export const resetPassword = async (payload) => {
   try {
     entries = jwt.verify(payload.token, env('JWT_SECRET'));
   } catch (err) {
-    if (err instanceof Error) throw createHttpError(401, err.message);
-    throw err;
+    if (err.name === 'TokenExpiredError') {
+      throw createHttpError(
+        401,
+        'Reset token expired. Please request a new one.',
+      );
+    }
+    throw createHttpError(401, 'Invalid token');
   }
-  const user = UsersCollection.findOne({
+
+  const user = await UsersCollection.findOne({
     email: entries.email,
     _id: entries.sub,
   });
@@ -154,8 +160,20 @@ export const resetPassword = async (payload) => {
 
   const encryptedPassword = await bcrypt.hash(payload.password, 10);
 
-  await UsersCollection.updateOne(
+  console.log('Encrypted password:', encryptedPassword);
+
+  const updateResult = await UsersCollection.updateOne(
     { _id: user._id },
     { password: encryptedPassword },
   );
+
+  console.log('Update result:', updateResult);
+
+  const updatedUser = await UsersCollection.findOne({ _id: user._id });
+
+  if (!(await bcrypt.compare(payload.password, updatedUser.password))) {
+    throw createHttpError(500, 'Password update failed');
+  }
+
+  console.log('Password successfully updated for user:', updatedUser.email);
 };
